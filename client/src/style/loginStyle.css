@@ -1,0 +1,11 @@
+.bg-image {
+    background-image: url('../assest/pexels-mlkbnl-9247605.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 110vh;
+    width: 100%;
+}
+.active {
+    background-color: #007bff; 
+    color: white; 
+}
