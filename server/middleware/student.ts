@@ -228,27 +228,39 @@ export const modelCreate = async (req: Request, res: Response) => {
 
 export const userGetData = async (req:Request, res:Response) => {
    try {
-      const userId = Number(req.body.user_id)
-      const topicId = Number(req.body.topicId)
+      const userId = Number(req.body.user_id);
+      const topicId = Number(req.body.topicId);
+      const page = Number(req.body.page) || 1;
+      const pageSize = Number(req.body.pageSize) || 10;
+      const filterValue = String(req.body.filteData || '').toLowerCase().replace(/\s+/g, '_');
+      const searchQuery = String(req.body.searchData || '').trim();
+      const columnName = String(req.body.ordered || '').trim().toLowerCase().replace(/\s+/g, '_');
+      const ordered = String(req.body.order) === 'desc' ? 'desc' : 'asc';
       if (!userId && !topicId) {
          return res.status(400).json({error:'Field are required'})
       }
+      let whereCondition: Record<string, any> = {
+         user_id: userId,
+         topic_id: topicId,
+         status: 1,
+       };
+       if (searchQuery && filterValue !== 'undefined') {
+         whereCondition[filterValue] = {
+            contains: searchQuery,
+         };
+      }
+      let orderedData: Record<string, any> = {};
+      if (columnName !== 'undefined' && columnName) {
+         orderedData = { [columnName]: ordered };
+      }
       const totalQuotes = await prisma.main_table_data.findMany({
          distinct:['quotes_title'],
-         where:{
-            user_id: userId,
-            topic_id: topicId,
-            status: 1
-         },
+         where:whereCondition
       })
       let totalCount = totalQuotes.length;
       const get_columns_data = await prisma.main_table_data.findMany({
          distinct:['quotes_title'],
-         where:{
-            user_id:userId,
-            topic_id:topicId,
-            status: 1
-         },
+         where:whereCondition,
          select:{
            id:true,
            user_id:true,
@@ -256,10 +268,14 @@ export const userGetData = async (req:Request, res:Response) => {
            quotes_title:true,
            author_name:true,
            created_at:true
-         }
+         },
+         skip: (page - 1) * pageSize,
+         take: pageSize,
+         orderBy: Object.keys(orderedData).length > 0 ? orderedData : undefined,
       });
+      console.log(get_columns_data)
       const mapgetcolumndata = await Promise.all(
-         get_columns_data?.map(async (point, index) => {
+         get_columns_data?.map(async (point:any, index:any) => {
             const main_columns_data = await prisma.main_table_data.aggregate({
                where: {
                   quotes_title:point.quotes_title
@@ -268,7 +284,7 @@ export const userGetData = async (req:Request, res:Response) => {
                   quotes:true
                }    
             })
-            const serialNo = Number(index + 1);
+            const serialNo = (page - 1) * pageSize + Number(index + 1);
             const quoteCount = main_columns_data._count.quotes;
             const created_at = moment(point.created_at, 'YYYY-MM-DD H:m:s').format('DD-MM-YY hh:mm A');
             return {
@@ -281,7 +297,7 @@ export const userGetData = async (req:Request, res:Response) => {
             }
          })
       )
-      return res.status(201).json({rowsData: mapgetcolumndata, total: totalCount})
+      return res.status(201).json({rowsData: mapgetcolumndata, total: totalCount, page, pageSize})
    } catch (err) {
       console.error("Error getting quote:", err);
       return res.status(500).json({ error: "Failed to get quote"})

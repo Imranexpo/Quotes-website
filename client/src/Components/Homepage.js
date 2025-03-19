@@ -1,5 +1,5 @@
 import { AppBar, Box, Divider, List, ListItem, ListItemText, Toolbar, Typography, Card, TextField, InputAdornment, Select, TableCell  } from '@mui/material'
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useContext, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import '../style/loginStyle.css'
 import Marquee from "react-fast-marquee";
@@ -24,8 +24,13 @@ import axios from 'axios';
 import $ from 'jquery';
 import ModelCreate from './modelCreate';
 import { useTheme } from '@mui/material/styles'; 
+import { PreloaderContext } from './preLoaderContext';
+import EditCalendarIcon from '@mui/icons-material/EditCalendar';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+
 function Homepage({userId}) {
   const theme = useTheme();
+  const { setLoading } = useContext(PreloaderContext);
   const primaryColor = theme.palette.primary.main;
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
@@ -41,13 +46,17 @@ function Homepage({userId}) {
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState(null);
   const [filterOptions, setFilterOptions] = useState([]);
-  const [filterValue, setFilterValue] = useState(null);  
-  const [clearSearch, setClear] = useState('');
   const [rowsData, setRowsData] = useState([]);
-  const handleSort = (columnId) => {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [filterValue, setFilterValue] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const handleSort = (columnId, columnName) => {
     const isAsc = orderBy === columnId && order === "asc";
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(columnId);
+    fetchRowsData(null, null, order, columnName)
   };
   const handleTopicClick = (id) => {
     setTopicId(null); 
@@ -59,12 +68,50 @@ function Homepage({userId}) {
       setTopicId(topics[0].id);  
     }
     isTopicClicked.current = false;
-  }, [topics]); 
-  
+  }, [topics]);
+
+  const handleSearch = () => {
+    if (filterValue) {
+      fetchRowsData(filterValue, searchQuery);
+    } else {
+      alert('please choose the filter')
+    }
+  };
+
   const handleClearFilter = () =>{
-    setFilterValue(null)
-    setClear('')
+    setFilterValue(null);
+    setSearchQuery('');
+    fetchRowsData();
   }
+  const fetchRowsData = useCallback((filterValue, searchQuery, ordered, columnName) => {
+    if (userId && topicId) {
+      setLoading(true)
+      const user_id = userId ? Number(userId) : null;
+      axios
+        .post("http://localhost:14853/api/getUserData", { 
+          user_id,
+          topicId,
+          page,
+          pageSize,
+          filteData: filterValue ? filterValue.label.replace(/\t/g, '') : '',
+          searchData: searchQuery,
+          order:ordered,
+          ordered:columnName,
+         })
+        .then((res) => {
+          if (res.data && res.data.rowsData) {
+            setRowsData(res.data.rowsData);
+            setTotalRecords(res.data.total);
+            setTimeout(() => {
+              setLoading(false)
+            }, 1000);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+  }, [userId, topicId, page, pageSize, setLoading]); 
   const getTopics = useCallback(function() { 
     if (userId && !isTopicClicked.current) {
       axios.post('http://localhost:14853/api/userTopics', { userId })
@@ -96,20 +143,14 @@ function Homepage({userId}) {
         console.log(error);
       });
     }
-    if(userId && topicId) {
-      const user_id = userId ? Number(userId) : null
-       axios.post('http://localhost:14853/api/getUserData', {user_id, topicId})
-       .then((res) => {
-        if (res.data && res.data.rowsData) {
-          setRowsData(res.data.rowsData)
-        }
-       })
-       .catch((error) =>{console.log(error)})
-    }
   }, [userId, topicId]);
   useEffect(() => {
     getTopics();
   }, [getTopics]); 
+
+  useEffect(() => {
+    fetchRowsData();
+  }, [fetchRowsData]);
 
   const handleMobileMenuClose = () => {
     setMobileMoreAnchorEl(null);
@@ -231,7 +272,7 @@ function Homepage({userId}) {
               </Typography>
           </Card>
           <Box sx={{ marginTop: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-          <ModelCreate title={title} titleId={titleId} userId={userId} setRowsDatas={setRowsData}/>
+          <ModelCreate title={title} titleId={titleId} userId={userId} fetchRowsData={fetchRowsData}/>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Autocomplete 
             options={filterOptions}
@@ -252,8 +293,8 @@ function Homepage({userId}) {
              }} 
         renderInput={(params) => <TextField {...params} label="Filter By" />}/>
         <TextField variant="outlined" label="Search" size="small"
-           value={clearSearch}
-           onChange={(e) => setClear(e.target.value)}
+           value={searchQuery}
+           onChange={(e) => setSearchQuery(e.target.value)}
            sx={{ 
                width: '280px',
                '& .MuiOutlinedInput-root': { 
@@ -268,7 +309,7 @@ function Homepage({userId}) {
     InputProps={{
         endAdornment: (
           <InputAdornment position="end" sx={{ gap: '2px' }}>
-              <IconButton size="small" 
+              <IconButton size="small" onClick={handleSearch}
                   sx={{ 
                       bgcolor: 'lightblue', 
                       borderRadius: '50%', 
@@ -276,9 +317,9 @@ function Homepage({userId}) {
                       height: '24px', 
                       '&:hover': { bgcolor: 'turquoise' }
                   }} >
-              <SearchIcon sx={{ fontSize: '16px', fontWeight: 'bold' }} />
+              <SearchIcon sx={{ fontSize: '16px', fontWeight: 'bold' }}/>
               </IconButton>
-              <IconButton size="small"  onClick={handleClearFilter}
+              <IconButton size="small" onClick={handleClearFilter}
                   sx={{ 
                       bgcolor: 'lightblue', 
                       borderRadius: '50%', 
@@ -299,7 +340,7 @@ function Homepage({userId}) {
         <TableHead sx={{backgroundColo: "#ececec" }}>
         <TableRow> {columns.map((column) => (
         <TableCell key={column.id} sx={{ color: 'black', fontWeight: 'bold' }} sortDirection={orderBy === column.id ? order : false} >
-        <TableSortLabel active={orderBy === column.id} direction={orderBy === column.id ? order : "asc"} onClick={() => handleSort(column.id)} IconComponent={column.sortable ? ArrowDropDownIcon : () => null} sx={{ color: 'black' }}>
+        <TableSortLabel active={orderBy === column.id} direction={orderBy === column.id ? order : "asc"} IconComponent={column.sortable ? ArrowDropDownIcon : () => null}  onClick={(e) => {e.stopPropagation(); handleSort(column.id, column.name);}}   sx={{ color: 'black', pointerEvents: column.sortable ? 'auto' : 'none' }}>
         {column.name}
       </TableSortLabel>
       </TableCell>
@@ -307,34 +348,39 @@ function Homepage({userId}) {
       </TableRow>
         </TableHead>
         <TableBody sx={{color: "#4C4C4A"}}>
-            {rowsData.map((row, index) => (
+        {rowsData.length > 0 ? (
+            rowsData.map((row, index) => (
               <TableRow key={index} id={row.id}>
                 <TableCell>{row.S_no}</TableCell>
                 <TableCell>{row.quotes_title}</TableCell>
                 <TableCell>{row.quotes_count}</TableCell>
                 <TableCell>{row.author_name}</TableCell>
-                <TableCell>{'-'}</TableCell>
-                <TableCell>{'-'}</TableCell>
+                <TableCell><EditCalendarIcon sx={{fontSize:'16px', color:'#1976d2', cursor:'pointer'}}/></TableCell>
+                <TableCell><VisibilityIcon sx={{fontSize:'16px', color:'#1976d2', cursor:'pointer'}}/></TableCell>
                 <TableCell>{row.created_at}</TableCell>
               </TableRow>
-            ))}
+            ))) : (
+              <TableRow>
+                 <TableCell colSpan={7} align='start'>No records found</TableCell>
+              </TableRow>
+            )}
         </TableBody>
       </Table>
     </TableContainer>
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
    <Box sx={{display: 'flex'}}>
-    <span>Showing <b>0</b> to <b>0</b> of <b>0</b> entries</span>
+    <span>Showing <b>{rowsData.length > 0 ? (page - 1) * pageSize + 1 : 0}</b> to <b>{Math.min(page * pageSize, totalRecords)}</b> of <b>{totalRecords}</b> entries</span>
    </Box>
   {/* Pagination centered */}
   <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
     <Stack spacing={2}>
-      <Pagination count={10} shape="rounded" />
+      <Pagination count={Math.ceil(totalRecords / pageSize)} page={page} onChange={(e, value)=> setPage(value)} shape="rounded" />
     </Stack>
   </Box>
   {/* Per page dropdown fixed to the right */}
   <Box sx={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
     <span>Per page</span>
-    <Select sx={{ minWidth: 80, height: 40 }}>
+    <Select sx={{ minWidth: 80, height: 40 }} value={pageSize} onChange={(e) => setPageSize(e.target.value)}>
       <MenuItem value={10}>10</MenuItem>
       <MenuItem value={15}>15</MenuItem>
       <MenuItem value={20}>20</MenuItem>

@@ -7,7 +7,7 @@ import Checkbox from '@mui/material/Checkbox';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton from '@mui/material/IconButton';
 import modelValidation from './ModelValidation';
-import $ from 'jquery'
+import $ from 'jquery';
 import axios from 'axios';
 import { PreloaderContext } from "./preLoaderContext";
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
@@ -15,7 +15,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 const ModelCreate = (props) => {
-    const { setRowsDatas } = props; // Destructuring props
+    const { fetchRowsData } = props; 
     const { setLoading } = useContext(PreloaderContext);
     const [open, setOpen] = useState(false);
     const handleClose = () => setOpen(false);
@@ -64,7 +64,7 @@ const ModelCreate = (props) => {
             setTimeout(() => {
               setLoading(false);
               alert(res.data.message); 
-              setRowsDatas();
+              fetchRowsData();
             }, 500);
           }
         })
