@@ -144,7 +144,8 @@ export const userTopics = async ( req: Request, res: Response ) => {
          id: item.id,
          topic: item.topic
      }));
-      res.status(201).json({ topics: topics });
+     const userData = await prisma.users.findFirst({where:{id:userId}, select:{id:true, username:true}});
+     res.status(201).json({ topics: topics, userDatas: userData });
    } catch (err) {
       console.error('Error finding topics:', err);
       res.status(400).json({ error: 'Failed to find topics' });
@@ -273,7 +274,6 @@ export const userGetData = async (req:Request, res:Response) => {
          take: pageSize,
          orderBy: Object.keys(orderedData).length > 0 ? orderedData : undefined,
       });
-      console.log(get_columns_data)
       const mapgetcolumndata = await Promise.all(
          get_columns_data?.map(async (point:any, index:any) => {
             const main_columns_data = await prisma.main_table_data.aggregate({

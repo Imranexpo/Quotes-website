@@ -12,7 +12,8 @@ import Box from "@mui/material/Box";
 import { PreloaderContext, PreloaderProvider } from "./Components/preLoaderContext";
 import Typography from "@mui/material/Typography"; 
 import './style/preLoader.css'
-import { useTheme } from '@mui/material/styles'; 
+import { useTheme } from '@mui/material/styles';
+import ProfilePage from './Components/profilePage'; 
 function Preloader() {
   const { loading } = useContext(PreloaderContext);
   const theme = useTheme();
@@ -71,6 +72,7 @@ function App() {
     <Preloader/>
     <Routes>
       <Route path='/' element={<Homepage userId={userId}/>}></Route>
+      <Route path='/Profile' element={<ProfilePage/>}></Route>
       <Route path='/Login' element={<Login onLogin={handleLogin} />}></Route>
       <Route path='/Signup' element={<Signup />}></Route>
       <Route path='/Forgot-password' element={<ForgotPassword/>}></Route>

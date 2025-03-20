@@ -1,4 +1,4 @@
-import { AppBar, Box, Divider, List, ListItem, ListItemText, Toolbar, Typography, Card, TextField, InputAdornment, Select, TableCell  } from '@mui/material'
+import { AppBar, Box, Divider, List, ListItem, ListItemText, Toolbar, Typography, Card, TextField, InputAdornment, Select, TableCell } from '@mui/material'
 import React, { useEffect, useState, useCallback, useContext, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import '../style/loginStyle.css'
@@ -27,7 +27,12 @@ import { useTheme } from '@mui/material/styles';
 import { PreloaderContext } from './preLoaderContext';
 import EditCalendarIcon from '@mui/icons-material/EditCalendar';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-
+import profileImage from "../assest/170120414.jpg";
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import HelpIcon from '@mui/icons-material/Help';
+import LogoutIcon from '@mui/icons-material/Logout';
 function Homepage({userId}) {
   const theme = useTheme();
   const { setLoading } = useContext(PreloaderContext);
@@ -52,6 +57,7 @@ function Homepage({userId}) {
   const [totalRecords, setTotalRecords] = useState(0);
   const [filterValue, setFilterValue] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userDatas, setUserData] = useState([]);
   const handleSort = (columnId, columnName) => {
     const isAsc = orderBy === columnId && order === "asc";
     setOrder(isAsc ? 'desc' : 'asc');
@@ -104,7 +110,7 @@ function Homepage({userId}) {
             setTotalRecords(res.data.total);
             setTimeout(() => {
               setLoading(false)
-            }, 1000);
+            }, 300);
           }
         })
         .catch((error) => {
@@ -117,6 +123,7 @@ function Homepage({userId}) {
       axios.post('http://localhost:14853/api/userTopics', { userId })
       .then((res) => {
         setTopics(res.data.topics);
+        setUserData(res.data.userDatas)
       })
       .catch((error) => {
         console.log(error);
@@ -206,32 +213,67 @@ function Homepage({userId}) {
         horizontal: 'right',
       }}
       open={isMenuOpen}
-      onClose={handleMenuClose} >
-      <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleMenuClose}><Link to={'/Login'} style={{textDecoration:"none", color:"black"}}>Logout</Link></MenuItem>
+      onClose={handleMenuClose} sx={{top:44}}  PaperProps={{sx: { width: 280,height: 265}}}>
+      <MenuItem onClick={handleMenuClose} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <img src={profileImage} alt="Profile" style={{ width: 50, height: 50, borderRadius: "50%" }} />
+      <span id={userDatas.id} style={{fontSize:'18px', fontWeight:'bold'}}>{userDatas.username}</span></MenuItem>
+      <Divider sx={{border:'1px solid black', width:'86%', mx:'auto'}}/>
+      <MenuItem onClick={handleMenuClose}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{width:'30px', height:'30px', background:'#e5e5e5', borderRadius:'50%', display:'flex', justifyContent:'center', alignItems:'center'}}><PersonIcon sx={{ fontSize:22 }} />
+          </Box>
+          <Link to={'/Profile'} style={{textDecoration:"none", color:"black"}}>Edit Profile</Link>
+        </Box>
+        <ChevronRightIcon sx={{ fontSize: 22, marginBottom: 0.2 }} />
+      </Box>
+    </MenuItem>
+      <MenuItem onClick={handleMenuClose}>
+      <Box sx={{display:'flex', justifyContent:'space-between', alignItems:'center', width:'100%'}}>
+        <Box sx={{display:'flex', alignItems:'center', gap: 2}}>
+         <Box sx={{width:'30px', height:'30px', background:'#e5e5e5', borderRadius:'50%', display:'flex', justifyContent:'center', alignItems:'center'}}><SettingsIcon sx={{fontSize:22}}/>
+         </Box>
+         <span>Settings & Privacy</span>       
+        </Box>
+        <ChevronRightIcon sx={{ fontSize: 22, marginBottom: 0.2 }} />
+      </Box>
+      </MenuItem>
+      <MenuItem onClick={handleMenuClose}>
+        <Box sx={{display:'flex', justifyContent:'space-between', alignItems:'center', width:'100%'}}>
+          <Box sx={{display:'flex', alignItems:'center', gap: 2}}>
+            <Box sx={{width:'30px', height:'30px', background:'#e5e5e5', borderRadius:'50%', display:'flex', justifyContent:'center', alignItems:'center'}}><HelpIcon sx={{fontSize:22}}/>
+            </Box>
+            <span>Help & Support</span>
+          </Box>
+          <ChevronRightIcon sx={{ fontSize: 22, marginBottom: 0.2 }}/>
+        </Box>
+      </MenuItem>
+      <MenuItem onClick={handleMenuClose}>
+        <Box sx={{display:'flex', justifyContent:'space-between', alignItems:'center', width:'100%'}}>
+         <Box sx={{display:'flex', alignItems:'center', gap: 2}}>
+           <Box sx={{width:'30px', height:'30px', background:'#e5e5e5', borderRadius:'50%', display:'flex', justifyContent:'center', alignItems:'center'}}><LogoutIcon sx={{fontSize:22}}/>
+           </Box>
+           <Link to={'/Login'} style={{textDecoration:"none", color:"black"}}>Logout</Link>
+         </Box>
+         <ChevronRightIcon sx={{ fontSize: 22, marginBottom: 0.2 }}/>
+        </Box>
+      </MenuItem>
     </Menu>
   );
   return (
     <div>
    <Box sx={{ flexGrow: 1 }}>
   {/* HEADER BAR */}
-    <AppBar position='static' sx={{ height: '52px' }}>
-    <Toolbar sx={{ transform: 'translateY(-10%)' }}>
+    <AppBar position='static' sx={{ height: '58px' }}>
+    <Toolbar sx={{ transform: 'translateY(-5%)' }}>
         <Typography variant="h5" component="div" sx={{ flexGrow: 1}}>𝕴𝖓𝖘𝖕𝖎𝖗𝖊 𝕸𝖊</Typography>
-        <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '30px', alignItems: 'center' }}>
-        <Link to={'/'} style={{ textDecoration: "none", color: "white", fontSize: "15px", fontWeight: "bold" }}>
-          HOME
-        </Link>
-        <Link to={'/'} style={{ textDecoration: "none", color: "white", fontSize: "15px", fontWeight: "bold" }}>
-          QUOTES
-        </Link>
-        <Link to={'/'} style={{ textDecoration: "none", color: "white", fontSize: "15px", fontWeight: "bold" }}>
-          AUTHORS
-        </Link>
+        <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '60px', alignItems: 'center' }}>
+        <Link to={'/'} style={{ textDecoration: "none", color: "white", fontSize: "18px", fontWeight: "bold" }}> HOME </Link>
+        <Link to={'/'} style={{ textDecoration: "none", color: "white", fontSize: "18px", fontWeight: "bold" }}> QUOTES </Link>
+        <Link to={'/'} style={{ textDecoration: "none", color: "white", fontSize: "18px", fontWeight: "bold" }}> AUTHORS </Link>
         </Box>
-        <IconButton size="large" edge="end" aria-label="account of current user" aria-controls={menuId} aria-haspopup="true" onClick={handleProfileMenuOpen} color="inherit">
-        <AccountCircle />
-        </IconButton>
+        <IconButton size="large" edge="end" aria-label="account of current user" aria-controls={menuId} aria-haspopup="true" onClick={handleProfileMenuOpen} color="inherit"><img src={profileImage} alt="Profile" style={{ width: 35, height: 35, borderRadius: "50%" }} />
+    </IconButton>
     </Toolbar>
     </AppBar>
     {renderMobileMenu}
@@ -264,16 +306,12 @@ function Homepage({userId}) {
    </Box>
    <Box sx={{ flexGrow: 1, padding: 1 }}>
           <Card sx={{ marginBottom: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 1 , color:'white', padding:'5px 10px',  backgroundColor:primaryColor }}>
-              {title}
-              </Typography>
-              <Typography variant="body1" sx={{marginBottom: 1, paddingLeft:'10px'}}>
-               {content}
-              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 1 , color:'white', padding:'5px 10px', backgroundColor:primaryColor }}>{title}</Typography>
+              <Typography variant="body1" sx={{marginBottom: 1, paddingLeft:'10px'}}>{content}</Typography>
           </Card>
           <Box sx={{ marginTop: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
           <ModelCreate title={title} titleId={titleId} userId={userId} fetchRowsData={fetchRowsData}/>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Autocomplete 
             options={filterOptions}
             getOptionLabel={(option) => option.label}
@@ -337,7 +375,7 @@ function Homepage({userId}) {
 </Box>
       <TableContainer component={Paper} sx={{marginBottom: 5}}>
       <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-        <TableHead sx={{backgroundColo: "#ececec" }}>
+        <TableHead sx={{backgroundColor: "#ececec" }}>
         <TableRow> {columns.map((column) => (
         <TableCell key={column.id} sx={{ color: 'black', fontWeight: 'bold' }} sortDirection={orderBy === column.id ? order : false} >
         <TableSortLabel active={orderBy === column.id} direction={orderBy === column.id ? order : "asc"} IconComponent={column.sortable ? ArrowDropDownIcon : () => null}  onClick={(e) => {e.stopPropagation(); handleSort(column.id, column.name);}}   sx={{ color: 'black', pointerEvents: column.sortable ? 'auto' : 'none' }}>
